@@ -32,7 +32,13 @@ redis.on("error", (err) => console.error("❌ Redis error:", err));
 
 // ---------- Routes ----------
 const authRoutes = require("./routes/auth");
+const productRoutes = require("./routes/product");
+const flashSaleEventRoutes = require("./routes/flashSaleEvent");
+const flashSaleRoutes = require("./routes/flashSale");
 
+app.use("/products", productRoutes);
+app.use("/flashsale-events", flashSaleEventRoutes); 
+app.use("/flashsale", flashSaleRoutes);
 app.use("/auth", authRoutes);
 
 app.get("/", (req, res) => {
