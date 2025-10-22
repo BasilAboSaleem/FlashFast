@@ -1,23 +1,22 @@
-import express from "express";
-import dotenv from "dotenv";
-import cookieParser from "cookie-parser";
-import methodOverride from "method-override";
-import rateLimit from "express-rate-limit";
-import { connectDB } from "./utils/db.js";
-import { redis } from "./utils/redis.js";
+const express = require("express");
+const dotenv = require("dotenv");
+const cookieParser = require("cookie-parser");
+const methodOverride = require("method-override");
+const rateLimit = require("express-rate-limit");
+const { connectDB } = require("./utils/db");
+const { redis } = require("./utils/redis");
 
-
-
+// ---------- Config ----------
 dotenv.config();
 const app = express();
 
-// ------------- Basic Middleware -------------
+// ---------- Basic Middleware ----------
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(methodOverride("_method"));
 
-// ------------- Rate Limiter -------------
+// ---------- Rate Limiter ----------
 app.use(
   rateLimit({
     windowMs: 1000,       // per second
@@ -26,19 +25,21 @@ app.use(
   })
 );
 
-// ------------- Database Connections -------------
+// ---------- Database Connections ----------
 connectDB();
 redis.on("connect", () => console.log("✅ Redis connected"));
 redis.on("error", (err) => console.error("❌ Redis error:", err));
 
-// ------------- Routes -------------
+// ---------- Routes ----------
+const authRoutes = require("./routes/auth");
 
+app.use("/auth", authRoutes);
 
 app.get("/", (req, res) => {
   res.send("🚀 FlashFast Sync API is running...");
 });
 
-// ------------- Start Server -------------
+// ---------- Start Server ----------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
   console.log(`✅ FlashFast running on http://localhost:${PORT}`)
