@@ -8,6 +8,14 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ["customer", "admin"], default: "customer" },
 });
 
+// Exclude password from JSON responses
+userSchema.set("toJSON", {
+  transform: (doc, ret) => {
+    delete ret.password;
+    return ret;
+  },
+});
+
 // Hash password before saving
 userSchema.pre("save", async function(next) {
   if (!this.isModified("password")) return next();

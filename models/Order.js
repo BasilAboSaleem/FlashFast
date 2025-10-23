@@ -6,6 +6,7 @@ const orderSchema = new mongoose.Schema({
   quantity: { type: Number, required: true },
   status: { type: String, enum: ["confirmed", "failed"], default: "confirmed" },
   createdAt: { type: Date, default: Date.now },
-});
+  totalPrice: { type: Number, required: true },
+}, { timestamps: true });
 
 module.exports = mongoose.model("Order", orderSchema);
