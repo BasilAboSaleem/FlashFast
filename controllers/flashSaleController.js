@@ -1,12 +1,18 @@
 const mongoose = require("mongoose");
 const FlashSaleEvent = require("../models/FlashSaleEvent");
 const Order = require("../models/Order");
+const Product = require("../models/Product"); 
 
 exports.purchase = async (req, res) => {
   const { eventId } = req.params;
-  const userId = req.user._id; // from auth middleware
-  const quantity = parseInt(req.body.quantity) || 1;
+  const userId = req.user._id;
 
+  // Validate eventId
+  if (!mongoose.Types.ObjectId.isValid(eventId)) {
+    return res.status(400).json({ message: "Invalid Flash Sale Event ID" });
+  }
+
+  const quantity = parseInt(req.body.quantity) || 1;
   if (quantity <= 0) {
     return res.status(400).json({ message: "Quantity must be at least 1" });
   }
@@ -15,7 +21,8 @@ exports.purchase = async (req, res) => {
   session.startTransaction();
 
   try {
-    const now = new Date();
+    const now = new Date(); // UTC
+    console.log("Purchase Attempt:", { eventId, now, quantity, userId });
 
     // Attempt to update stock atomically
     const event = await FlashSaleEvent.findOneAndUpdate(
@@ -23,7 +30,8 @@ exports.purchase = async (req, res) => {
         _id: eventId,
         availableStock: { $gte: quantity },
         startTime: { $lte: now },
-        endTime: { $gte: now }
+        endTime: { $gte: now },
+        isActive: true
       },
       { $inc: { availableStock: -quantity, soldQuantity: quantity } },
       { new: true, session }
@@ -34,6 +42,15 @@ exports.purchase = async (req, res) => {
       return res.status(400).json({ message: "Stock not sufficient or event not active" });
     }
 
+    // جلب بيانات المنتج لحساب totalPrice
+    const product = await Product.findById(event.product);
+    if (!product) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: "Product not found" });
+    }
+    const totalPrice = product.price * quantity;
+
     // Create the order
     const order = await Order.create(
       [
@@ -41,6 +58,7 @@ exports.purchase = async (req, res) => {
           user: userId,
           product: event.product,
           quantity,
+          totalPrice, // ✅ إضافة totalPrice
           status: "confirmed"
         }
       ],
@@ -50,7 +68,7 @@ exports.purchase = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    res.json({ message: "Purchase successful", order: order[0] });
+    res.json({ success: true, message: "Purchase successful", order: order[0] });
   } catch (err) {
     await session.abortTransaction();
     session.endSession();

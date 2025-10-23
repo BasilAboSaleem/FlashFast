@@ -35,11 +35,14 @@ const authRoutes = require("./routes/auth");
 const productRoutes = require("./routes/product");
 const flashSaleEventRoutes = require("./routes/flashSaleEvent");
 const flashSaleRoutes = require("./routes/flashSale");
+const orderRoutes = require("./routes/orderRoutes");
+
 
 app.use("/products", productRoutes);
 app.use("/flashsale-events", flashSaleEventRoutes); 
 app.use("/flashsale", flashSaleRoutes);
 app.use("/auth", authRoutes);
+app.use("/orders", orderRoutes);
 
 app.get("/", (req, res) => {
   res.send("🚀 FlashFast Sync API is running...");
