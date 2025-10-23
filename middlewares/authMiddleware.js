@@ -8,15 +8,9 @@ module.exports = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
-
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // لو بدك تقيدها للإدمن فقط
-    if (user.role !== "admin") {
-      return res.status(403).json({ message: "Access denied: Admins only" });
-    }
-
-    req.user = user;
+    req.user = user; // Attach user to request object
     next();
   } catch (err) {
     console.error("Auth error:", err);
