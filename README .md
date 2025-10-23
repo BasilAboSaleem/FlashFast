@@ -140,7 +140,7 @@ This first version (v1) implements the system using **traditional HTTP requests 
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/<your-repo>/flashfast-backend.git
+git clonehttps://github.com/BasilAboSaleem/FlashFast
 cd flashfast-backend
 ```
 
