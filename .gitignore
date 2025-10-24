@@ -2,8 +2,9 @@
 node_modules/
 
 # Environment files
-.env
-.env.local
+.env*
+.env.v1
+.env.v2
 .env.*.local
 
 # Logs
