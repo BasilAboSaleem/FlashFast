@@ -1,105 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="description"
-      content="FlashFast - Lightning-fast flash sales and e-commerce platform"
-    />
-    <meta name="keywords" content="flash sales, e-commerce, deals, shopping" />
-    <meta name="author" content="FlashFast Team" />
-
-    <!-- Security headers -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
-    />
-
-    <!-- Favicon and app icons -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-
-    <!-- Open Graph meta tags for social sharing -->
-    <meta property="og:title" content="FlashFast - Flash Sales Platform" />
-    <meta
-      property="og:description"
-      content="Participate in lightning-fast flash sales and get amazing deals"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://flashfast.com" />
-
-    <title>FlashFast - Flash Sales Platform</title>
-
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="css/main.css" />
-    <link rel="stylesheet" href="css/auth.css" />
-
-    <!-- Configuration -->
-    <script src="config/config.js"></script>
+    <title>react-front-end</title>
   </head>
   <body>
-    <!-- Main Application Container -->
-    <div id="app">
-      <!-- Navigation will be inserted here -->
-      <nav id="navigation"></nav>
-
-      <!-- Main content area -->
-      <main id="main-content">
-        <!-- Page content will be dynamically loaded here -->
-        <div id="page-container">
-          <!-- Loading spinner -->
-          <div
-            id="loading-spinner"
-            class="loading-spinner"
-            style="display: none"
-          >
-            <div class="spinner"></div>
-            <p>Loading...</p>
-          </div>
-
-          <!-- Error container -->
-          <div id="error-container" class="error-container"></div>
-
-          <!-- Success notifications -->
-          <div id="success-container" class="success-container"></div>
-
-          <!-- Default welcome content -->
-          <div id="welcome-content">
-            <h1>Welcome to FlashFast</h1>
-            <p>Your lightning-fast flash sales platform</p>
-            <div class="auth-buttons">
-              <button id="login-btn" class="btn btn-primary">Login</button>
-              <button id="register-btn" class="btn btn-secondary">
-                Register
-              </button>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <!-- Footer -->
-      <footer id="footer">
-        <p>&copy; 2024 FlashFast. All rights reserved.</p>
-      </footer>
-    </div>
-
-    <!-- JavaScript Files -->
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/app.js"></script>
-
-    <!-- Initialize application -->
-    <script>
-      // Initialize the application when DOM is loaded
-      document.addEventListener('DOMContentLoaded', function () {
-        console.log('FlashFast application starting...');
-        console.log('Environment:', CONFIG.ENVIRONMENT);
-        console.log('API Base URL:', getApiBaseUrl());
-
-        // App will be initialized automatically by app.js
-      });
-    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
