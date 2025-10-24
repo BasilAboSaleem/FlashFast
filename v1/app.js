@@ -7,8 +7,9 @@ const { connectDB } = require("./utils/db");
 const { redis } = require("./utils/redis");
 
 // ---------- Config ----------
-dotenv.config();
-const app = express();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env.v1') });// 👈 download the correct environment file
+const app = express(); 
 
 // ---------- Basic Middleware ----------
 app.use(express.json());
@@ -19,8 +20,8 @@ app.use(methodOverride("_method"));
 // ---------- Rate Limiter ----------
 app.use(
   rateLimit({
-    windowMs: 1000,       // per second
-    max: 50,              // maximum 50 requests
+    windowMs: 1000, // per second
+    max: 50, // maximum 50 requests
     message: "Too many requests, please slow down.",
   })
 );
@@ -37,19 +38,18 @@ const flashSaleEventRoutes = require("./routes/flashSaleEvent");
 const flashSaleRoutes = require("./routes/flashSale");
 const orderRoutes = require("./routes/orderRoutes");
 
-
-app.use("/products", productRoutes);
-app.use("/flashsale-events", flashSaleEventRoutes); 
-app.use("/flashsale", flashSaleRoutes);
 app.use("/auth", authRoutes);
+app.use("/products", productRoutes);
+app.use("/flashsale-events", flashSaleEventRoutes);
+app.use("/flashsale", flashSaleRoutes);
 app.use("/orders", orderRoutes);
 
 app.get("/", (req, res) => {
-  res.send("🚀 FlashFast Sync API is running...");
+  res.send("🚀 FlashFast v1 (Synchronous HTTP) is running...");
 });
 
 // ---------- Start Server ----------
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () =>
-  console.log(`✅ FlashFast running on http://localhost:${PORT}`)
+  console.log(`✅ FlashFast v1 running on http://localhost:${PORT}`)
 );

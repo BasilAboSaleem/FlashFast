@@ -1,224 +1,145 @@
-# ⚡ FlashFast – E-Commerce Flash Sale System  
-### Version 1 – HTTP Synchronous Implementation  
-
----
+# ⚡ FlashFast – Backend Engineering Final Project
 
 ## 📘 Overview
-**FlashFast** is a backend system for managing **E-Commerce Flash Sales** — events where a limited stock of products is sold at high speed to many customers.  
-This first version (v1) implements the system using **traditional HTTP requests (synchronous)** to establish a baseline for performance comparison against the asynchronous (queue-based) version later.  
+**FlashFast** is an advanced backend system built for handling large-scale **e-commerce flash sales** — inspired by platforms like Amazon’s Lightning Deals and Black Friday events.  
+It was developed as part of the **Backend Engineering & Performance Optimization** final project to demonstrate mastery of backend communication patterns, concurrency control, and load balancing.
 
 ---
 
-## 🚀 Tech Stack
-- **Node.js + Express.js** – Backend framework  
-- **MongoDB (Mongoose)** – Main database  
-- **Redis** – Cache / ready for async version  
-- **JWT (jsonwebtoken)** – Authentication  
-- **Docker** – Containerized MongoDB & Redis services  
-- **Postman** – API testing  
+## 🧩 Scenario Chosen: E-Commerce Flash Sale System
+### 🎯 Real-Life Context
+During a flash sale, **100,000+ users** attempt to purchase **limited stock (1,000 items)** in just a few minutes.  
+The system must:
+- Handle massive concurrent purchase requests.  
+- Prevent overselling inventory.  
+- Maintain consistent order creation and inventory states under load.  
+- Scale efficiently across multiple instances.
 
 ---
 
-## 🧩 Core Features (Version 1)
+## 🏗 Project Architecture
+This project includes **two distinct implementations** of the same system for performance comparison:
 
-| Feature | Description | Status |
-|----------|--------------|--------|
-| **User Authentication** | Register & login with JWT | ✅ |
-| **Products Management** | Admins can create and list products | ✅ |
-| **Flash Sale Events** | Admins can create timed sale events for specific products | ✅ |
-| **Purchase Flow** | Customers can purchase a product during an active flash sale (synchronous) | ✅ |
-| **Orders** | Users can view their own orders | ✅ |
-| **Role-based Access Control** | Admin vs Customer permissions enforced | ✅ |
-| **Redis Connection** | Active and ready for async version | ✅ |
+| Version | Pattern | Description |
+|----------|----------|-------------|
+| **v1 – Synchronous HTTP** | Request/Response | Classic REST API implementation using HTTP, where all operations (purchase, order creation) happen within the same request cycle. |
+| **v2 – Asynchronous Queue** | Redis Queue (Pub/Sub or BullMQ) | Decoupled architecture using Redis as a message queue to process purchases asynchronously and handle high concurrency safely. |
 
 ---
 
-## 🧱 Data Models
-
-### 🧍 User
-| Field | Type | Description |
-|--------|------|-------------|
-| `name` | String | User name |
-| `email` | String | Unique email |
-| `password` | String | Hashed password |
-| `role` | String | Either `admin` or `customer` |
-
----
-
-### 📦 Product
-| Field | Type | Description |
-|--------|------|-------------|
-| `name` | String | Product name |
-| `price` | Number | Product price |
-| `stock` | Number | Base stock (outside flash sale) |
+## 🧱 Tech Stack
+| Component | Technology |
+|------------|-------------|
+| Language | Node.js (Express.js) |
+| Database | MongoDB (Mongoose ORM) |
+| Cache / Queue | Redis |
+| Reverse Proxy / Load Balancer | Nginx |
+| Containerization | Docker & Docker Compose |
+| Load Testing Tools | k6 / Apache JMeter |
+| Version Control | Git & GitHub |
 
 ---
 
-### ⚡ FlashSaleEvent
-| Field | Type | Description |
-|--------|------|-------------|
-| `product` | ObjectId (ref: Product) | Product being sold |
-| `startTime` | Date | Start of flash sale |
-| `endTime` | Date | End of flash sale |
-| `availableStock` | Number | Remaining quantity during event |
-| `soldQuantity` | Number | Total sold units |
-| `isActive` | Boolean | Whether event is active |
-
----
-
-### 🧾 Order
-| Field | Type | Description |
-|--------|------|-------------|
-| `user` | ObjectId (ref: User) | Who placed the order |
-| `product` | ObjectId (ref: Product) | Product purchased |
-| `quantity` | Number | Amount purchased |
-| `totalPrice` | Number | Calculated from product price × quantity |
-| `status` | String | e.g. `confirmed` |
-
----
-
-## 🔐 Authentication & Authorization
-
-| Role | Permissions |
-|------|--------------|
-| **Admin** | Create products, create flash sale events |
-| **Customer** | Purchase during flash sale, view own orders |
-
-- Auth implemented via JWT in headers:  
-  `Authorization: Bearer <token>`
-
----
-
-## 🧭 API Routes (Version 1)
-
-### Auth Routes
-| Method | Endpoint | Description | Role |
-|---------|-----------|-------------|------|
-| `POST` | `/auth/register` | Register new user | Public |
-| `POST` | `/auth/login` | Login and get token | Public |
-
----
-
-### Product Routes
-| Method | Endpoint | Description | Role |
-|---------|-----------|-------------|------|
-| `POST` | `/products` | Create new product | Admin |
-| `GET` | `/products` | List all products | Public |
-
----
-
-### Flash Sale Event Routes
-| Method | Endpoint | Description | Role |
-|---------|-----------|-------------|------|
-| `POST` | `/flashsale-events` | Create a new flash sale event | Admin |
-| `GET` | `/flashsale-events` | List all flash sale events | Public |
-
----
-
-### Purchase Route
-| Method | Endpoint | Description | Role |
-|---------|-----------|-------------|------|
-| `POST` | `/flashsale/:eventId/purchase` | Purchase a product in flash sale | Customer |
-
-#### Example Request Body:
-```json
-{
-  "quantity": 1
-}
+## 🗂 Repository Structure
+```
+flashfast-backend/
+├── v1/                     # Version 1 – Synchronous HTTP
+│   ├── app.js
+│   ├── controllers/
+│   ├── routes/
+│   ├── models/
+│   ├── middlewares/
+│   ├── utils/
+|   ├── views/
+│   ├── .env.v1
+│   └── README.md
+│
+├── v2/                     # Version 2 – Asynchronous Queue (to be implemented)
+│   ├── app.js
+│   ├── controllers/
+│   ├── queue/
+│   ├── workers/
+│   ├── routes/
+│   ├── .env.v2
+│   └── README.md
+│
+├── docker-compose.yml
+├── ARCHITECTURE.md         # System architecture diagrams and design decisions
+├── ANALYSIS_REPORT.pdf     # Quantitative + qualitative performance comparison
+├── README.md               # This file (root-level)
+└── .gitignore
 ```
 
 ---
 
-### Orders Route
-| Method | Endpoint | Description | Role |
-|---------|-----------|-------------|------|
-| `GET` | `/orders/my` | View logged-in user’s orders | Customer |
+## 🚀 Running the Project
 
----
-
-## ⚙️ How to Run the Project
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/BasilAboSaleem/FlashFast
-cd flashfast-backend
-```
-
-### 2. Install Dependencies
-```bash
-npm install
-```
-
-### 3. Configure Environment
-Create `.env` file:
-```bash
-PORT=3001
-MONGO_URI=mongodb://localhost:27017/flashfast
-JWT_SECRET=your_jwt_secret
-REDIS_HOST=localhost
-REDIS_PORT=6379
-```
-
-### 4. Start Services via Docker
+### 🐳 1. Start required services
 ```bash
 docker-compose up -d
 ```
 
-### 5. Run Server
+### ▶️ 2. Run Version 1 (Synchronous HTTP)
 ```bash
-npm run dev
+cd v1
+npm install
+npm run start
+```
+API base URL: `http://localhost:3001`
+
+### ⚙️ 3. Run Version 2 (Asynchronous Queue)
+(After implementation)
+```bash
+cd v2
+npm install
+npm run start
 ```
 
 ---
 
-## 🧪 Testing Flow (via Postman)
-
-1. **Register Admin**
-   - `POST /auth/register`
-2. **Login as Admin**
-   - Save token
-3. **Create Product**
-   - `POST /products`
-4. **Create Flash Sale Event**
-   - `POST /flashsale-events`
-5. **Register & Login Customer**
-6. **Purchase Product**
-   - `POST /flashsale/:eventId/purchase`
-7. **View Orders**
-   - `GET /orders/my`
+## 📡 Core Features (Both Versions)
+- 🔐 User Authentication (JWT)
+- 🛍 Product Management (Admin)
+- ⚡ Flash Sale Event Scheduling (Admin)
+- 💰 Flash Sale Purchase (Customer)
+- 📦 Order Creation and Listing
+- 🧾 Role-based Access Control
+- 🧠 MongoDB Transactions for consistency
+- 💾 Redis ready for caching & queues
+- 🧰 Dockerized Environment for easy deployment
 
 ---
 
-## 📊 Version 1 Summary
-
-| Area | Status |
-|-------|--------|
-| Core Models | ✅ Complete |
-| Controllers & Routes | ✅ Complete |
-| Authentication | ✅ Done |
-| Authorization | ✅ Done |
-| Redis Connection | ✅ Configured |
-| Purchase Logic | ✅ Tested |
-| Postman Tests | ✅ Passed |
-| Performance Benchmark | 🚫 Will be done in Version 2 |
+## 📊 Deliverables Overview
+| Deliverable | Description |
+|--------------|-------------|
+| **v1 Implementation** | Complete synchronous HTTP backend |
+| **v2 Implementation** | Async queue-based system with Redis |
+| **ARCHITECTURE.md** | Diagrams and design decisions |
+| **ANALYSIS_REPORT.pdf** | Performance comparison between v1 and v2 |
+| **README.md (root)** | Overview and navigation |
+| **Video Demo** | 5-minute walkthrough and live performance test |
 
 ---
 
-## ⚡ Next Steps – Version 2 (Async / High-Concurrency)
-In the next version, the system will:
-- Process purchases using **Queues (Bull / Redis Streams)**  
-- Handle **high concurrency safely**  
-- Implement **Redis caching** for performance  
-- Compare benchmark results between synchronous and asynchronous implementations  
+## 🧠 Performance Goals
+- Handle 10,000+ concurrent requests with no overselling.
+- Maintain low latency (p95 < 200ms for queue version).
+- Demonstrate horizontal scalability with Nginx load balancing.
+- Collect metrics (latency, throughput, CPU/memory) for both versions.
 
 ---
 
-## 👨‍💻 Author
-**Basil Abu Saleem && Mohammed Salim**  
-Backend Developer – FlashFast Project (Final Project, Mastering Backend Engineering & Performance Optimization Training)
+## 🏁 Final Notes
+This project demonstrates:
+- Deep understanding of **backend communication patterns**.  
+- Mastery of **synchronous vs asynchronous** execution models.  
+- Practical application of **Redis, MongoDB transactions, and load balancing**.  
+- Real-world engineering thinking in **performance analysis and scalability**.
 
 ---
 
-## 🏁 Status
-✅ **Version 1 Completed and Fully Tested**  
-🔜 Next: **Version 2 – Asynchronous Queue Implementation**
+### 👤 Author
+**Basil Saleem**  
+Backend Engineer | Node.js | MongoDB | Redis  
+Built as part of the *Mastering Backend Engineering & Performance Optimization* program (Gaza Sky Geeks, 2025).
