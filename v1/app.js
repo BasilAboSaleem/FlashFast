@@ -8,7 +8,7 @@ const { redis } = require("./utils/redis");
 
 // ---------- Config ----------
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '.env.v1') });// 👈 download the correct environment file
+require('dotenv').config({ path: path.resolve(__dirname, 'v1.env') });// 👈 download the correct environment file
 const app = express(); 
 
 // ---------- Basic Middleware ----------
