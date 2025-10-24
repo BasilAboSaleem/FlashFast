@@ -6,6 +6,8 @@ node_modules/
 .env.v1
 .env.v2
 .env.*.local
+*.env
+v1/v1.env
 
 # Logs
 *.log

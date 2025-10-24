@@ -49,6 +49,21 @@ app.get('/', (req, res) => {
   res.send('🚀 FlashFast v1 (Synchronous HTTP) is running...');
 });
 
+// Place 404 and 500 handlers here, after all routes:
+function handleNotFound(req, res, next) {
+  res.status(404).json({ error: 'Route not found' });
+}
+app.use(handleNotFound);
+
+function handleServerError(err, req, res, next) {
+  console.error('❌ Internal Server Error:', err);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message || 'An unexpected error occurred.',
+  });
+}
+
+app.use(handleServerError);
 // ---------- Start Server ----------
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () =>
