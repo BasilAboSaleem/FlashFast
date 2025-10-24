@@ -9,6 +9,9 @@ exports.register = async (req, res) => {
     if (existingUser) {
       return res.status(409).json({ message: 'Email already exists' });
     }
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
     const user = await User.create({ name, email, password, role });
     const token = jwt.sign(
       { id: user._id, role: user.role },
