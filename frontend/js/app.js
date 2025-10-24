@@ -42,30 +42,13 @@ class FlashFastApp {
    * Check if user is authenticated on app start
    */
   checkAuthentication() {
-    const token = localStorage.getItem('jwt_token');
-    if (token) {
-      try {
-        // Decode JWT token to get user info (basic decode, not verification)
-        const payload = JSON.parse(atob(token.split('.')[1]));
-
-        // Check if token is expired
-        if (payload.exp && payload.exp * 1000 > Date.now()) {
-          this.setState({
-            user: {
-              id: payload.id || payload.userId,
-              email: payload.email,
-              role: payload.role,
-              username: payload.username,
-            },
-            isAuthenticated: true,
-          });
-        } else {
-          // Token expired, remove it
-          localStorage.removeItem('jwt_token');
-        }
-      } catch (error) {
-        console.error('Invalid token:', error);
-        localStorage.removeItem('jwt_token');
+    if (window.authManager && window.authManager.isAuthenticated()) {
+      const user = window.authManager.getCurrentUser();
+      if (user) {
+        this.setState({
+          user: user,
+          isAuthenticated: true,
+        });
       }
     }
   }
@@ -88,6 +71,12 @@ class FlashFastApp {
 
     // Handle window resize for responsive updates
     window.addEventListener('resize', this.handleResize.bind(this));
+
+    // Handle input events for real-time validation
+    document.addEventListener('input', this.handleInput.bind(this));
+
+    // Handle focus events for form fields
+    document.addEventListener('focus', this.handleFocus.bind(this), true);
   }
 
   /**
@@ -187,6 +176,14 @@ class FlashFastApp {
   }
 
   /**
+   * Show success message
+   * @param {string} message - Success message to display
+   */
+  showSuccess(message) {
+    this.displaySuccess(message);
+  }
+
+  /**
    * Clear error state
    */
   clearError() {
@@ -204,13 +201,17 @@ class FlashFastApp {
     // Handle login form
     if (form.id === 'loginForm') {
       event.preventDefault();
-      this.handleLogin(form);
+      if (this.validateLoginForm(form)) {
+        this.handleLogin(form);
+      }
     }
 
     // Handle register form
     if (form.id === 'registerForm') {
       event.preventDefault();
-      this.handleRegister(form);
+      if (this.validateRegisterForm(form)) {
+        this.handleRegister(form);
+      }
     }
 
     // Add other form handlers as needed
@@ -237,9 +238,15 @@ class FlashFastApp {
     }
 
     // Handle error dismissal
-    if (target.matches('.alert .btn-close')) {
+    if (target.matches('#error-container .alert .btn-close')) {
       event.preventDefault();
       this.clearError();
+    }
+
+    // Handle success dismissal
+    if (target.matches('#success-container .alert .btn-close')) {
+      event.preventDefault();
+      this.hideSuccess();
     }
   }
 
@@ -249,6 +256,79 @@ class FlashFastApp {
   handleResize() {
     // Update mobile menu state or other responsive elements
     this.updateResponsiveElements();
+  }
+
+  /**
+   * Handle input events for real-time validation
+   * @param {Event} event - Input event
+   */
+  handleInput(event) {
+    const target = event.target;
+
+    // Handle password strength checking
+    if (target.id === 'register-password') {
+      this.updatePasswordStrength(target);
+    }
+
+    // Clear validation errors on input
+    if (target.classList.contains('is-invalid')) {
+      this.clearFieldValidation(target);
+    }
+  }
+
+  /**
+   * Handle focus events for form fields
+   * @param {Event} event - Focus event
+   */
+  handleFocus(event) {
+    const target = event.target;
+
+    // Clear validation state when field gets focus
+    if (target.matches('.form-control, .form-select')) {
+      this.clearFieldValidation(target);
+    }
+  }
+
+  /**
+   * Update password strength indicator
+   * @param {HTMLElement} passwordField - Password input field
+   */
+  updatePasswordStrength(passwordField) {
+    const password = passwordField.value;
+    const strengthContainer =
+      passwordField.parentNode.querySelector('.password-strength');
+    const strengthBar = strengthContainer?.querySelector(
+      '.password-strength-bar'
+    );
+    const strengthText = passwordField.parentNode.querySelector(
+      '.password-strength-text'
+    );
+
+    if (!strengthContainer || !strengthBar || !strengthText) return;
+
+    const strength = this.getPasswordStrength(password);
+
+    // Update strength indicator
+    strengthContainer.className = `password-strength password-strength-${strength.strength}`;
+
+    // Update strength text
+    if (password.length === 0) {
+      strengthText.textContent = '';
+    } else {
+      const strengthLabels = {
+        weak: 'Weak password',
+        medium: 'Medium strength',
+        strong: 'Strong password',
+      };
+      strengthText.textContent = strengthLabels[strength.strength];
+      strengthText.className = `password-strength-text text-${
+        strength.strength === 'weak'
+          ? 'danger'
+          : strength.strength === 'medium'
+          ? 'warning'
+          : 'success'
+      }`;
+    }
   }
 
   /**
@@ -266,15 +346,18 @@ class FlashFastApp {
       this.setLoading(true);
       this.clearError();
 
-      const response = await window.apiClient.login(credentials);
+      const result = await window.authManager.login(credentials);
 
-      // Update user state
-      if (response.user) {
+      if (result.success) {
+        // Update user state
         this.setState({
-          user: response.user,
+          user: result.user,
           isAuthenticated: true,
         });
         this.navigateTo('dashboard', true);
+        this.showSuccess('Login successful! Welcome back.');
+      } else {
+        this.showError(result.error || 'Login failed');
       }
     } catch (error) {
       this.showError(
@@ -304,19 +387,24 @@ class FlashFastApp {
       this.setLoading(true);
       this.clearError();
 
-      const response = await window.apiClient.register(userData);
+      const result = await window.authManager.register(userData);
 
-      // Update user state and redirect to dashboard
-      if (response.user) {
-        this.setState({
-          user: response.user,
-          isAuthenticated: true,
-        });
-        this.navigateTo('dashboard', true);
+      if (result.success) {
+        if (result.requiresLogin) {
+          // Registration successful, redirect to login
+          this.navigateTo('login', true);
+          this.showSuccess('Registration successful! Please log in.');
+        } else {
+          // Auto-login after registration
+          this.setState({
+            user: result.user,
+            isAuthenticated: true,
+          });
+          this.navigateTo('dashboard', true);
+          this.showSuccess('Registration successful! Welcome to FlashFast.');
+        }
       } else {
-        // Registration successful, redirect to login
-        this.navigateTo('login', true);
-        this.showError('Registration successful! Please log in.', 'success');
+        this.showError(result.error || 'Registration failed');
       }
     } catch (error) {
       this.showError(
@@ -332,16 +420,231 @@ class FlashFastApp {
   /**
    * Handle user logout
    */
-  handleLogout() {
-    localStorage.removeItem('jwt_token');
-    this.setState({
-      user: null,
-      isAuthenticated: false,
-      products: [],
-      flashSaleEvents: [],
-      orders: [],
-    });
-    this.navigateTo('login', true);
+  async handleLogout() {
+    try {
+      await window.authManager.logout();
+      this.setState({
+        user: null,
+        isAuthenticated: false,
+        products: [],
+        flashSaleEvents: [],
+        orders: [],
+      });
+      this.navigateTo('login', true);
+      this.showSuccess('Logged out successfully.');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force logout even if API call fails
+      this.setState({
+        user: null,
+        isAuthenticated: false,
+        products: [],
+        flashSaleEvents: [],
+        orders: [],
+      });
+      this.navigateTo('login', true);
+    }
+  }
+
+  /**
+   * Validate login form
+   * @param {HTMLFormElement} form - Login form element
+   * @returns {boolean} Whether form is valid
+   */
+  validateLoginForm(form) {
+    const email = form.querySelector('#login-email');
+    const password = form.querySelector('#login-password');
+    let isValid = true;
+
+    // Clear previous validation states
+    this.clearFieldValidation(email);
+    this.clearFieldValidation(password);
+
+    // Validate email
+    if (!email.value.trim()) {
+      this.showFieldError(email, 'Email is required');
+      isValid = false;
+    } else if (!this.isValidEmail(email.value)) {
+      this.showFieldError(email, 'Please enter a valid email address');
+      isValid = false;
+    } else {
+      this.showFieldSuccess(email);
+    }
+
+    // Validate password
+    if (!password.value.trim()) {
+      this.showFieldError(password, 'Password is required');
+      isValid = false;
+    } else if (password.value.length < 6) {
+      this.showFieldError(password, 'Password must be at least 6 characters');
+      isValid = false;
+    } else {
+      this.showFieldSuccess(password);
+    }
+
+    return isValid;
+  }
+
+  /**
+   * Validate register form
+   * @param {HTMLFormElement} form - Register form element
+   * @returns {boolean} Whether form is valid
+   */
+  validateRegisterForm(form) {
+    const username = form.querySelector('#register-username');
+    const email = form.querySelector('#register-email');
+    const password = form.querySelector('#register-password');
+    const role = form.querySelector('input[name="role"]:checked');
+    let isValid = true;
+
+    // Clear previous validation states
+    this.clearFieldValidation(username);
+    this.clearFieldValidation(email);
+    this.clearFieldValidation(password);
+
+    // Validate username
+    if (!username.value.trim()) {
+      this.showFieldError(username, 'Username is required');
+      isValid = false;
+    } else {
+      const usernameValidation = window.authManager
+        ? window.authManager.validateUsername(username.value)
+        : {
+            isValid: username.value.length >= 3 && username.value.length <= 20,
+            feedback: [],
+          };
+
+      if (!usernameValidation.isValid) {
+        this.showFieldError(
+          username,
+          usernameValidation.feedback[0] || 'Invalid username'
+        );
+        isValid = false;
+      } else {
+        this.showFieldSuccess(username);
+      }
+    }
+
+    // Validate email
+    if (!email.value.trim()) {
+      this.showFieldError(email, 'Email is required');
+      isValid = false;
+    } else if (!this.isValidEmail(email.value)) {
+      this.showFieldError(email, 'Please enter a valid email address');
+      isValid = false;
+    } else {
+      this.showFieldSuccess(email);
+    }
+
+    // Validate password
+    if (!password.value.trim()) {
+      this.showFieldError(password, 'Password is required');
+      isValid = false;
+    } else if (password.value.length < 6) {
+      this.showFieldError(password, 'Password must be at least 6 characters');
+      isValid = false;
+    } else {
+      const strength = this.getPasswordStrength(password.value);
+      if (strength.score < 2) {
+        this.showFieldError(
+          password,
+          'Password is too weak. Please use a stronger password.'
+        );
+        isValid = false;
+      } else {
+        this.showFieldSuccess(password);
+      }
+    }
+
+    // Validate role selection
+    if (!role) {
+      const roleContainer = form.querySelector('.role-selection');
+      this.showFieldError(roleContainer, 'Please select an account type');
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  /**
+   * Check if email is valid
+   * @param {string} email - Email to validate
+   * @returns {boolean} Whether email is valid
+   */
+  isValidEmail(email) {
+    return window.authManager ? window.authManager.validateEmail(email) : false;
+  }
+
+  /**
+   * Get password strength
+   * @param {string} password - Password to check
+   * @returns {Object} Password strength info
+   */
+  getPasswordStrength(password) {
+    if (window.authManager) {
+      const validation = window.authManager.validatePassword(password);
+      return {
+        score: validation.score,
+        strength: validation.strength,
+        feedback: validation.feedback,
+      };
+    }
+
+    // Fallback implementation
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+
+    let strength = 'weak';
+    if (score >= 3) strength = 'strong';
+    else if (score >= 2) strength = 'medium';
+
+    return { score, strength, feedback: [] };
+  }
+
+  /**
+   * Show field error
+   * @param {HTMLElement} field - Form field element
+   * @param {string} message - Error message
+   */
+  showFieldError(field, message) {
+    field.classList.add('is-invalid');
+    field.classList.remove('is-valid');
+
+    const feedback = field.parentNode.querySelector('.invalid-feedback');
+    if (feedback) {
+      feedback.textContent = message;
+    }
+  }
+
+  /**
+   * Show field success
+   * @param {HTMLElement} field - Form field element
+   */
+  showFieldSuccess(field) {
+    field.classList.add('is-valid');
+    field.classList.remove('is-invalid');
+
+    const feedback = field.parentNode.querySelector('.invalid-feedback');
+    if (feedback) {
+      feedback.textContent = '';
+    }
+  }
+
+  /**
+   * Clear field validation
+   * @param {HTMLElement} field - Form field element
+   */
+  clearFieldValidation(field) {
+    if (field) {
+      field.classList.remove('is-valid', 'is-invalid');
+      const feedback = field.parentNode.querySelector('.invalid-feedback');
+      if (feedback) {
+        feedback.textContent = '';
+      }
+    }
   }
 
   /**
@@ -437,12 +740,49 @@ class FlashFastApp {
   }
 
   /**
+   * Display success message in UI
+   * @param {string} message - Success message
+   */
+  displaySuccess(message) {
+    let successContainer = document.getElementById('success-container');
+
+    if (!successContainer) {
+      successContainer = document.createElement('div');
+      successContainer.id = 'success-container';
+      successContainer.className = 'success-container';
+      document.body.insertBefore(successContainer, document.body.firstChild);
+    }
+
+    successContainer.innerHTML = `
+      <div class="alert alert-success alert-dismissible">
+        ${this.escapeHtml(message)}
+        <button type="button" class="btn-close" aria-label="Close">×</button>
+      </div>
+    `;
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      this.hideSuccess();
+    }, 5000);
+  }
+
+  /**
    * Hide error message
    */
   hideError() {
     const errorContainer = document.getElementById('error-container');
     if (errorContainer) {
       errorContainer.innerHTML = '';
+    }
+  }
+
+  /**
+   * Hide success message
+   */
+  hideSuccess() {
+    const successContainer = document.getElementById('success-container');
+    if (successContainer) {
+      successContainer.innerHTML = '';
     }
   }
 
@@ -477,36 +817,57 @@ class FlashFastApp {
    */
   getLoginPageHTML() {
     return `
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-md-6">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title text-center">Login to FlashFast</h3>
+      <div class="auth-container">
+        <div class="auth-card">
+          <div class="auth-header">
+            <h3>Welcome Back</h3>
+            <p class="subtitle">Sign in to your FlashFast account</p>
+          </div>
+          <div class="auth-body">
+            <form id="loginForm" class="auth-form" novalidate>
+              <div class="form-group">
+                <label for="login-email" class="form-label">Email Address</label>
+                <input 
+                  type="email" 
+                  class="form-control" 
+                  id="login-email" 
+                  name="email" 
+                  placeholder="Enter your email"
+                  required
+                  autocomplete="email"
+                >
+                <div class="invalid-feedback"></div>
               </div>
-              <div class="card-body">
-                <form id="loginForm">
-                  <div class="form-group">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="password" name="password" required>
-                  </div>
-                  <button type="submit" class="btn btn-primary btn-block">
-                    ${
-                      this.state.loading
-                        ? '<span class="spinner spinner-sm"></span> Logging in...'
-                        : 'Login'
-                    }
-                  </button>
-                </form>
-                <div class="text-center mt-3">
-                  <a href="#" data-route="register">Don't have an account? Register</a>
-                </div>
+              <div class="form-group">
+                <label for="login-password" class="form-label">Password</label>
+                <input 
+                  type="password" 
+                  class="form-control" 
+                  id="login-password" 
+                  name="password" 
+                  placeholder="Enter your password"
+                  required
+                  autocomplete="current-password"
+                >
+                <div class="invalid-feedback"></div>
               </div>
-            </div>
+              <div class="remember-me">
+                <input type="checkbox" id="remember-me" name="remember">
+                <label for="remember-me">Remember me</label>
+              </div>
+              <button type="submit" class="btn btn-primary auth-submit-btn" ${
+                this.state.loading ? 'disabled' : ''
+              }>
+                ${
+                  this.state.loading
+                    ? '<span class="spinner spinner-sm"></span> Signing in...'
+                    : 'Sign In'
+                }
+              </button>
+            </form>
+          </div>
+          <div class="auth-footer">
+            <p>Don't have an account? <a href="#" data-route="register">Create one here</a></p>
           </div>
         </div>
       </div>
@@ -515,48 +876,83 @@ class FlashFastApp {
 
   getRegisterPageHTML() {
     return `
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-md-6">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title text-center">Register for FlashFast</h3>
+      <div class="auth-container">
+        <div class="auth-card">
+          <div class="auth-header">
+            <h3>Join FlashFast</h3>
+            <p class="subtitle">Create your account to start shopping</p>
+          </div>
+          <div class="auth-body">
+            <form id="registerForm" class="auth-form" novalidate>
+              <div class="form-group">
+                <label for="register-username" class="form-label">Username</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="register-username" 
+                  name="username" 
+                  placeholder="Choose a username"
+                  required
+                  autocomplete="username"
+                  minlength="3"
+                  maxlength="20"
+                >
+                <div class="invalid-feedback"></div>
               </div>
-              <div class="card-body">
-                <form id="registerForm">
-                  <div class="form-group">
-                    <label for="username" class="form-label">Username</label>
-                    <input type="text" class="form-control" id="username" name="username" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="password" name="password" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="role" class="form-label">Role</label>
-                    <select class="form-select" id="role" name="role" required>
-                      <option value="">Select Role</option>
-                      <option value="customer">Customer</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                  <button type="submit" class="btn btn-primary btn-block">
-                    ${
-                      this.state.loading
-                        ? '<span class="spinner spinner-sm"></span> Registering...'
-                        : 'Register'
-                    }
-                  </button>
-                </form>
-                <div class="text-center mt-3">
-                  <a href="#" data-route="login">Already have an account? Login</a>
+              <div class="form-group">
+                <label for="register-email" class="form-label">Email Address</label>
+                <input 
+                  type="email" 
+                  class="form-control" 
+                  id="register-email" 
+                  name="email" 
+                  placeholder="Enter your email"
+                  required
+                  autocomplete="email"
+                >
+                <div class="invalid-feedback"></div>
+              </div>
+              <div class="form-group">
+                <label for="register-password" class="form-label">Password</label>
+                <input 
+                  type="password" 
+                  class="form-control" 
+                  id="register-password" 
+                  name="password" 
+                  placeholder="Create a strong password"
+                  required
+                  autocomplete="new-password"
+                  minlength="6"
+                >
+                <div class="password-strength">
+                  <div class="password-strength-bar"></div>
                 </div>
+                <div class="password-strength-text"></div>
+                <div class="invalid-feedback"></div>
               </div>
-            </div>
+              <div class="form-group">
+                <label for="register-role" class="form-label">Account Type</label>
+                <div class="role-selection">
+                  <input type="radio" id="role-customer" name="role" value="customer" class="role-option" required>
+                  <label for="role-customer">Customer</label>
+                  <input type="radio" id="role-admin" name="role" value="admin" class="role-option">
+                  <label for="role-admin">Admin</label>
+                </div>
+                <div class="invalid-feedback"></div>
+              </div>
+              <button type="submit" class="btn btn-primary auth-submit-btn" ${
+                this.state.loading ? 'disabled' : ''
+              }>
+                ${
+                  this.state.loading
+                    ? '<span class="spinner spinner-sm"></span> Creating Account...'
+                    : 'Create Account'
+                }
+              </button>
+            </form>
+          </div>
+          <div class="auth-footer">
+            <p>Already have an account? <a href="#" data-route="login">Sign in here</a></p>
           </div>
         </div>
       </div>

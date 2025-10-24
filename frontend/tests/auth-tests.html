@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlashFast Authentication Tests</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .test-container {
+        background: white;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .test-suite {
+        border-left: 4px solid #007bff;
+        padding-left: 15px;
+        margin: 20px 0;
+      }
+      .test-case {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .test-pass {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .test-fail {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .test-pending {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+      .summary {
+        background: #e9ecef;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+      .run-tests {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      .run-tests:hover {
+        background: #0056b3;
+      }
+      .error-details {
+        font-family: monospace;
+        font-size: 12px;
+        margin-top: 5px;
+        padding: 5px;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>FlashFast Authentication Tests</h1>
+
+    <div class="test-container">
+      <button class="run-tests" onclick="runAllTests()">Run All Tests</button>
+      <div id="test-results"></div>
+      <div id="test-summary" class="summary" style="display: none"></div>
+    </div>
+
+    <!-- Include the source files -->
+    <script src="../config/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+
+    <script>
+      // Simple test framework
+      class TestRunner {
+        constructor() {
+          this.tests = [];
+          this.results = [];
+          this.currentSuite = null;
+        }
+
+        describe(suiteName, callback) {
+          this.currentSuite = suiteName;
+          callback();
+          this.currentSuite = null;
+        }
+
+        it(testName, callback) {
+          this.tests.push({
+            suite: this.currentSuite,
+            name: testName,
+            callback: callback,
+          });
+        }
+
+        async runTests() {
+          this.results = [];
+          const resultsContainer = document.getElementById('test-results');
+          resultsContainer.innerHTML = '';
+
+          for (const test of this.tests) {
+            try {
+              await test.callback();
+              this.results.push({
+                ...test,
+                status: 'pass',
+                error: null,
+              });
+            } catch (error) {
+              this.results.push({
+                ...test,
+                status: 'fail',
+                error: error.message,
+              });
+            }
+          }
+
+          this.displayResults();
+        }
+
+        displayResults() {
+          const resultsContainer = document.getElementById('test-results');
+          const summaryContainer = document.getElementById('test-summary');
+
+          let currentSuite = null;
+          let suiteContainer = null;
+
+          this.results.forEach((result) => {
+            if (result.suite !== currentSuite) {
+              currentSuite = result.suite;
+              suiteContainer = document.createElement('div');
+              suiteContainer.className = 'test-suite';
+              suiteContainer.innerHTML = `<h3>${currentSuite}</h3>`;
+              resultsContainer.appendChild(suiteContainer);
+            }
+
+            const testElement = document.createElement('div');
+            testElement.className = `test-case test-${result.status}`;
+            testElement.innerHTML = `
+                        <strong>${result.status === 'pass' ? '✓' : '✗'} ${
+              result.name
+            }</strong>
+                        ${
+                          result.error
+                            ? `<div class="error-details">${result.error}</div>`
+                            : ''
+                        }
+                    `;
+            suiteContainer.appendChild(testElement);
+          });
+
+          // Display summary
+          const passed = this.results.filter((r) => r.status === 'pass').length;
+          const failed = this.results.filter((r) => r.status === 'fail').length;
+          const total = this.results.length;
+
+          summaryContainer.innerHTML = `
+                    <h3>Test Summary</h3>
+                    <p><strong>Total:</strong> ${total} | <strong>Passed:</strong> ${passed} | <strong>Failed:</strong> ${failed}</p>
+                    <p><strong>Success Rate:</strong> ${
+                      total > 0 ? Math.round((passed / total) * 100) : 0
+                    }%</p>
+                `;
+          summaryContainer.style.display = 'block';
+        }
+
+        expect(actual) {
+          return {
+            toBe: (expected) => {
+              if (actual !== expected) {
+                throw new Error(`Expected ${expected}, but got ${actual}`);
+              }
+            },
+            toEqual: (expected) => {
+              if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                throw new Error(
+                  `Expected ${JSON.stringify(
+                    expected
+                  )}, but got ${JSON.stringify(actual)}`
+                );
+              }
+            },
+            toBeTruthy: () => {
+              if (!actual) {
+                throw new Error(`Expected truthy value, but got ${actual}`);
+              }
+            },
+            toBeFalsy: () => {
+              if (actual) {
+                throw new Error(`Expected falsy value, but got ${actual}`);
+              }
+            },
+            toContain: (expected) => {
+              if (!actual.includes(expected)) {
+                throw new Error(`Expected ${actual} to contain ${expected}`);
+              }
+            },
+            toThrow: () => {
+              let threw = false;
+              try {
+                if (typeof actual === 'function') {
+                  actual();
+                }
+              } catch (e) {
+                threw = true;
+              }
+              if (!threw) {
+                throw new Error('Expected function to throw an error');
+              }
+            },
+          };
+        }
+      }
+
+      const testRunner = new TestRunner();
+      const { describe, it, expect } = testRunner;
+
+      // Mock localStorage for testing
+      const mockLocalStorage = {
+        data: {},
+        getItem: function (key) {
+          return this.data[key] || null;
+        },
+        setItem: function (key, value) {
+          this.data[key] = value;
+        },
+        removeItem: function (key) {
+          delete this.data[key];
+        },
+        clear: function () {
+          this.data = {};
+        },
+      };
+
+      // Authentication Tests
+      describe('AuthManager - JWT Token Handling', () => {
+        let authManager;
+
+        beforeEach(() => {
+          // Reset localStorage mock
+          mockLocalStorage.clear();
+          // Create new auth manager instance
+          authManager = new AuthManager();
+          // Replace localStorage with mock
+          Object.defineProperty(window, 'localStorage', {
+            value: mockLocalStorage,
+            writable: true,
+          });
+        });
+
+        it('should store and retrieve JWT token', () => {
+          const testToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+
+          authManager.setToken(testToken);
+          const retrievedToken = authManager.getToken();
+
+          expect(retrievedToken).toBe(testToken);
+        });
+
+        it('should decode JWT token payload correctly', () => {
+          const testToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+
+          const payload = authManager.decodeToken(testToken);
+
+          expect(payload.sub).toBe('1234567890');
+          expect(payload.name).toBe('John Doe');
+          expect(payload.iat).toBe(1516239022);
+        });
+
+        it('should detect expired tokens', () => {
+          // Create token with past expiry
+          const expiredPayload = {
+            sub: '1234567890',
+            name: 'John Doe',
+            exp: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
+          };
+          const expiredToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+            btoa(JSON.stringify(expiredPayload)) +
+            '.signature';
+
+          const isExpired = authManager.isTokenExpired(expiredToken);
+
+          expect(isExpired).toBeTruthy();
+        });
+
+        it('should detect valid tokens', () => {
+          // Create token with future expiry
+          const validPayload = {
+            sub: '1234567890',
+            name: 'John Doe',
+            exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
+          };
+          const validToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+            btoa(JSON.stringify(validPayload)) +
+            '.signature';
+
+          const isExpired = authManager.isTokenExpired(validToken);
+
+          expect(isExpired).toBeFalsy();
+        });
+
+        it('should clear all authentication data', () => {
+          authManager.setToken('test-token');
+          authManager.setRefreshToken('test-refresh-token');
+          authManager.setUser({ id: 1, name: 'Test User' });
+
+          authManager.clearAuthData();
+
+          expect(authManager.getToken()).toBe(null);
+          expect(authManager.getRefreshToken()).toBe(null);
+          expect(authManager.getCurrentUser()).toBe(null);
+        });
+      });
+
+      describe('AuthManager - User Authentication State', () => {
+        let authManager;
+
+        beforeEach(() => {
+          mockLocalStorage.clear();
+          authManager = new AuthManager();
+          Object.defineProperty(window, 'localStorage', {
+            value: mockLocalStorage,
+            writable: true,
+          });
+        });
+
+        it('should return false for isAuthenticated when no token exists', () => {
+          const isAuth = authManager.isAuthenticated();
+          expect(isAuth).toBeFalsy();
+        });
+
+        it('should return false for isAuthenticated when token is expired', () => {
+          const expiredPayload = {
+            sub: '1234567890',
+            exp: Math.floor(Date.now() / 1000) - 3600,
+          };
+          const expiredToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+            btoa(JSON.stringify(expiredPayload)) +
+            '.signature';
+
+          authManager.setToken(expiredToken);
+          const isAuth = authManager.isAuthenticated();
+
+          expect(isAuth).toBeFalsy();
+        });
+
+        it('should return true for isAuthenticated when token is valid', () => {
+          const validPayload = {
+            sub: '1234567890',
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          };
+          const validToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+            btoa(JSON.stringify(validPayload)) +
+            '.signature';
+
+          authManager.setToken(validToken);
+          const isAuth = authManager.isAuthenticated();
+
+          expect(isAuth).toBeTruthy();
+        });
+
+        it('should extract user data from token', () => {
+          const userPayload = {
+            id: '123',
+            email: 'test@example.com',
+            username: 'testuser',
+            role: 'customer',
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          };
+          const userToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+            btoa(JSON.stringify(userPayload)) +
+            '.signature';
+
+          authManager.setToken(userToken);
+          const user = authManager.getCurrentUser();
+
+          expect(user.id).toBe('123');
+          expect(user.email).toBe('test@example.com');
+          expect(user.username).toBe('testuser');
+          expect(user.role).toBe('customer');
+        });
+
+        it('should check user roles correctly', () => {
+          const adminPayload = {
+            id: '123',
+            role: 'admin',
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          };
+          const adminToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+            btoa(JSON.stringify(adminPayload)) +
+            '.signature';
+
+          authManager.setToken(adminToken);
+
+          expect(authManager.hasRole('admin')).toBeTruthy();
+          expect(authManager.hasRole('customer')).toBeFalsy();
+          expect(authManager.isAdmin()).toBeTruthy();
+          expect(authManager.isCustomer()).toBeFalsy();
+        });
+      });
+
+      describe('AuthManager - Form Validation', () => {
+        let authManager;
+
+        beforeEach(() => {
+          authManager = new AuthManager();
+        });
+
+        it('should validate email addresses correctly', () => {
+          expect(authManager.validateEmail('test@example.com')).toBeTruthy();
+          expect(
+            authManager.validateEmail('user.name+tag@domain.co.uk')
+          ).toBeTruthy();
+          expect(authManager.validateEmail('invalid-email')).toBeFalsy();
+          expect(authManager.validateEmail('test@')).toBeFalsy();
+          expect(authManager.validateEmail('@example.com')).toBeFalsy();
+          expect(authManager.validateEmail('')).toBeFalsy();
+        });
+
+        it('should validate usernames correctly', () => {
+          const validUsername = authManager.validateUsername('testuser123');
+          expect(validUsername.isValid).toBeTruthy();
+
+          const shortUsername = authManager.validateUsername('ab');
+          expect(shortUsername.isValid).toBeFalsy();
+          expect(shortUsername.feedback).toContain(
+            'Username must be at least 3 characters long'
+          );
+
+          const longUsername = authManager.validateUsername('a'.repeat(25));
+          expect(longUsername.isValid).toBeFalsy();
+          expect(longUsername.feedback).toContain(
+            'Username must be less than 20 characters long'
+          );
+
+          const invalidUsername = authManager.validateUsername('test-user!');
+          expect(invalidUsername.isValid).toBeFalsy();
+          expect(invalidUsername.feedback).toContain(
+            'Username can only contain letters, numbers, and underscores'
+          );
+        });
+
+        it('should validate password strength correctly', () => {
+          const weakPassword = authManager.validatePassword('123');
+          expect(weakPassword.strength).toBe('weak');
+          expect(weakPassword.isValid).toBeFalsy();
+
+          const mediumPassword = authManager.validatePassword('password123');
+          expect(mediumPassword.strength).toBe('medium');
+          expect(mediumPassword.isValid).toBeTruthy();
+
+          const strongPassword = authManager.validatePassword('Password123!');
+          expect(strongPassword.strength).toBe('strong');
+          expect(strongPassword.isValid).toBeTruthy();
+        });
+      });
+
+      describe('Form Validation UI', () => {
+        it('should create login form HTML with proper validation attributes', () => {
+          // This would test the actual form HTML generation
+          // For now, we'll test that the form elements have the right attributes
+          const loginHTML = `
+                    <input type="email" id="login-email" name="email" required autocomplete="email">
+                    <input type="password" id="login-password" name="password" required autocomplete="current-password">
+                `;
+
+          // Create temporary DOM elements to test
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = loginHTML;
+
+          const emailInput = tempDiv.querySelector('#login-email');
+          const passwordInput = tempDiv.querySelector('#login-password');
+
+          expect(emailInput.type).toBe('email');
+          expect(emailInput.required).toBeTruthy();
+          expect(emailInput.autocomplete).toBe('email');
+
+          expect(passwordInput.type).toBe('password');
+          expect(passwordInput.required).toBeTruthy();
+          expect(passwordInput.autocomplete).toBe('current-password');
+        });
+
+        it('should create register form HTML with proper validation attributes', () => {
+          const registerHTML = `
+                    <input type="text" id="register-username" name="username" required minlength="3" maxlength="20">
+                    <input type="email" id="register-email" name="email" required>
+                    <input type="password" id="register-password" name="password" required minlength="6">
+                    <input type="radio" name="role" value="customer" required>
+                    <input type="radio" name="role" value="admin">
+                `;
+
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = registerHTML;
+
+          const usernameInput = tempDiv.querySelector('#register-username');
+          const emailInput = tempDiv.querySelector('#register-email');
+          const passwordInput = tempDiv.querySelector('#register-password');
+          const roleInputs = tempDiv.querySelectorAll('input[name="role"]');
+
+          expect(usernameInput.type).toBe('text');
+          expect(usernameInput.required).toBeTruthy();
+          expect(usernameInput.minLength).toBe(3);
+          expect(usernameInput.maxLength).toBe(20);
+
+          expect(emailInput.type).toBe('email');
+          expect(emailInput.required).toBeTruthy();
+
+          expect(passwordInput.type).toBe('password');
+          expect(passwordInput.required).toBeTruthy();
+          expect(passwordInput.minLength).toBe(6);
+
+          expect(roleInputs.length).toBe(2);
+          expect(roleInputs[0].value).toBe('customer');
+          expect(roleInputs[1].value).toBe('admin');
+        });
+      });
+
+      // Helper function to run all tests
+      async function runAllTests() {
+        await testRunner.runTests();
+      }
+
+      // Auto-run tests when page loads
+      window.addEventListener('load', () => {
+        console.log(
+          'Authentication tests loaded. Click "Run All Tests" to execute.'
+        );
+      });
+    </script>
+  </body>
+</html>

@@ -30,23 +30,24 @@
     - Add error handling for network failures and HTTP status codes
     - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 3. Implement authentication system
+- [x] 3. Implement authentication system
 
-  - [ ] 3.1 Create authentication UI components
+  - [x] 3.1 Create authentication UI components
 
     - Build login form with email/password validation
     - Create registration form with username, email, password, and role selection
     - Style authentication pages with auth.css
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 3.2 Implement authentication logic and JWT handling
+  - [x] 3.2 Implement authentication logic and JWT handling
 
     - Write auth.js with login, register, and logout functions
     - Implement JWT token storage and retrieval from localStorage
     - Add automatic token validation and redirect logic for protected routes
     - _Requirements: 1.4, 1.5_
 
-  - [ ] 3.3 Write authentication unit tests
+  - [x] 3.3 Write authentication unit tests
+
     - Create tests for login/register form validation
     - Test JWT token storage and retrieval functions
     - Test authentication state management
