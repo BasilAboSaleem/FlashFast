@@ -3,6 +3,7 @@ node_modules/
 
 # Environment files
 .env*
+v1/.env.v1
 .env.v1
 .env.v2
 .env.*.local

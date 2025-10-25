@@ -2,17 +2,18 @@
   "name": "flashfast",
   "version": "1.0.0",
   "main": "app.js",
-"scripts": {
-  "start": "node v1/app.js",           
-  "dev": "nodemon v1/app.js",
-  "start:v1": "nodemon v1/app.js",
-  "start:v2": "nodemon v2/app.js"
-},
+  "scripts": {
+    "start": "node v1/app.js",
+    "dev": "nodemon v1/app.js",
+    "start:v1": "nodemon v1/app.js",
+    "start:v2": "nodemon v2/app.js"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
