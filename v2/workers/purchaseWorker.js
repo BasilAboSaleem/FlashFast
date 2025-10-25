@@ -3,28 +3,29 @@ const Product = require("../models/Product");
 const Order = require("../models/Order");
 const FlashSaleEvent = require("../models/FlashSaleEvent");
 
-purchaseQueue.process(
-  5, // number of concurrent jobs
-  async (job) => {
-    const { userId, eventId, productId, quantity } = job.data;
-    console.log(`🛠️ Processing purchase job: ${job.id} by user ${userId}`);
+purchaseQueue.process(5, async (job) => {
+  const { userId, eventId, productId, quantity } = job.data;
+  console.log(`🛠️ Processing purchase job: ${job.id} by user ${userId}`);
 
-    // event implementation steps:
-    // Event verification
+  try {
+    console.log(`🚀 Job started: ${job.id}`);
+
+    // EVENT VALIDATION
     const event = await FlashSaleEvent.findById(eventId);
     if (!event) throw new Error("Flash sale event not found");
 
-    // product validation
+    // PRODUCT VALIDATION 
     if (!event.product.equals(productId)) {
       throw new Error("Product not part of this flash sale");
     }
 
-    // update stock atomically
+    // update stock and create order atomically
     const product = await Product.findOneAndUpdate(
       { _id: productId, stock: { $gte: quantity } },
       { $inc: { stock: -quantity } },
       { new: true }
     );
+
     if (!product) throw new Error("Not enough stock available");
 
     // create order
@@ -34,23 +35,38 @@ purchaseQueue.process(
       quantity,
       totalPrice: product.price * quantity,
       flashSaleEvent: eventId,
-      status: "confirmed"
+      status: "confirmed",
     });
 
     console.log(`✅ Order ${order._id} created successfully`);
 
-    // update job progress
+    //  Socket.io
+    if (global.io) {
+      global.io.emit("stockUpdate", {
+        productId,
+        newStock: product.stock,
+        message: `📦 Product ${productId} stock updated to ${product.stock}`,
+      });
+      console.log(`📡 Stock update emitted for product ${productId}`);
+    }
+
+    // update progress in Queue
     job.progress(100);
 
+    console.log(`✅ Job completed: ${job.id}`);
     return order;
-  }
-);
 
-// Event listeners  logging
+  } catch (err) {
+    console.error(`❌ Job failed ${job.id}: ${err.message}`);
+    throw err;
+  }
+});
+
+// Listeners 
 purchaseQueue.on("failed", (job, err) => {
   console.error(`❌ Job ${job.id} failed: ${err.message}`);
 });
 
-purchaseQueue.on("completed", (job, result) => {
+purchaseQueue.on("completed", (job) => {
   console.log(`🎉 Job ${job.id} completed`);
 });

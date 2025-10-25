@@ -16,6 +16,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(methodOverride("_method"));
+app.use(express.static(path.join(__dirname, "views")));
 
 // ---------- Rate Limiter ----------
 app.use(
@@ -44,6 +45,9 @@ app.use("/api/products", productRoutes);
 app.use("/api/flashsale", flashSaleRoutes);
 app.use("/api/orders", orderRoutes);
 
+app.get("/testStock", (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "testStock.html"));
+});
 app.get("/", (req, res) => {
   res.send("🚀 FlashFast v2 (Asynchronous Queue) is running...");
 });
