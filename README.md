@@ -56,10 +56,14 @@ flashfast-backend/
 │
 ├── v2/                     # Version 2 – Asynchronous Queue (to be implemented)
 │   ├── app.js
+│   ├── server.js
 │   ├── controllers/
-│   ├── queue/
-│   ├── workers/
 │   ├── routes/
+│   ├── queues/
+│   ├── workers/
+│   ├── utils/
+│   │   ├── db.js
+│   │   ├── redis.js
 │   ├── .env.v2
 │   └── README.md
 │
