@@ -32,15 +32,17 @@ redis.on("connect", () => console.log("✅ Redis connected"));
 redis.on("error", (err) => console.error("❌ Redis error:", err));
 
 // ---------- Routes ----------
-/*const authRoutes = require("./routes/authRoutes");
+const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const flashSaleRoutes = require("./routes/flashSaleRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const flashSaleEventRoutes = require("./routes/flashSaleEventRoutes");
 
-app.use("/api/auth", authRoutes);
+app.use("/api/flashsale-events", flashSaleEventRoutes);
+app.use("/api/auth", authRoutes); 
 app.use("/api/products", productRoutes);
 app.use("/api/flashsale", flashSaleRoutes);
-app.use("/api/orders", orderRoutes);*/
+app.use("/api/orders", orderRoutes);
 
 app.get("/", (req, res) => {
   res.send("🚀 FlashFast v2 (Asynchronous Queue) is running...");

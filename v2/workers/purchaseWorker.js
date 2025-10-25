@@ -4,20 +4,22 @@ const Order = require("../models/Order");
 const FlashSaleEvent = require("../models/FlashSaleEvent");
 
 purchaseQueue.process(
-  5, //count of concurrent jobs
+  5, // number of concurrent jobs
   async (job) => {
     const { userId, eventId, productId, quantity } = job.data;
     console.log(`🛠️ Processing purchase job: ${job.id} by user ${userId}`);
 
-    // 1. event validation
+    // event implementation steps:
+    // Event verification
     const event = await FlashSaleEvent.findById(eventId);
     if (!event) throw new Error("Flash sale event not found");
 
-    // 2. product validation
-    if (!event.products.includes(productId))
+    // product validation
+    if (!event.product.equals(productId)) {
       throw new Error("Product not part of this flash sale");
+    }
 
-    // 3. stock deduction (atomic)
+    // update stock atomically
     const product = await Product.findOneAndUpdate(
       { _id: productId, stock: { $gte: quantity } },
       { $inc: { stock: -quantity } },
@@ -25,24 +27,26 @@ purchaseQueue.process(
     );
     if (!product) throw new Error("Not enough stock available");
 
-    // 4.   create order
+    // create order
     const order = await Order.create({
       user: userId,
-      products: [{ product: productId, quantity }],
-      totalAmount: product.price * quantity,
+      product: productId,
+      quantity,
+      totalPrice: product.price * quantity,
       flashSaleEvent: eventId,
+      status: "confirmed"
     });
 
     console.log(`✅ Order ${order._id} created successfully`);
 
-    // 5. update progress 
+    // update job progress
     job.progress(100);
 
     return order;
   }
 );
 
-//  Event listeners for logging
+// Event listeners  logging
 purchaseQueue.on("failed", (job, err) => {
   console.error(`❌ Job ${job.id} failed: ${err.message}`);
 });

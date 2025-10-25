@@ -1,8 +1,8 @@
-// v2/server.js
 const app = require("./app");
-const purchaseQueue = require("./queues/purchaseQueue"); // Ensure queue starts processing
+const purchaseQueue = require("./queues/purchaseQueue"); // Queue instance
+require("./workers/purchaseWorker"); // jobs
 
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 3002;
 
 app.listen(PORT, () =>
   console.log(`✅ FlashFast v2 server running on http://localhost:${PORT}`)

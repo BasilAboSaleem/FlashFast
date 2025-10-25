@@ -144,6 +144,6 @@ This project demonstrates:
 ---
 
 ### 👤 Author
-**Basil Saleem**  
+**Basil Abu Saleem && Mohammed Salim**  
 Backend Engineer | Node.js | MongoDB | Redis  
 Built as part of the *Mastering Backend Engineering & Performance Optimization* program (Gaza Sky Geeks, 2025).
