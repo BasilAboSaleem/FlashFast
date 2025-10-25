@@ -23,7 +23,7 @@ This project includes **two distinct implementations** of the same system for pe
 | Version | Pattern | Description |
 |----------|----------|-------------|
 | **v1 – Synchronous HTTP** | Request/Response | Classic REST API implementation using HTTP, where all operations (purchase, order creation) happen within the same request cycle. |
-| **v2 – Asynchronous Queue** | Redis Queue (Pub/Sub or BullMQ) | Decoupled architecture using Redis as a message queue to process purchases asynchronously and handle high concurrency safely. |
+| **v2 – Asynchronous Queue** | Redis Queue (BullMQ) | Decoupled architecture using Redis as a message queue to process purchases asynchronously and handle high concurrency safely. |
 
 ---
 
@@ -50,17 +50,20 @@ flashfast-backend/
 │   ├── models/
 │   ├── middlewares/
 │   ├── utils/
-|   ├── views/
+│   ├── views/
 │   ├── .env.v1
 │   └── README.md
 │
-├── v2/                     # Version 2 – Asynchronous Queue (to be implemented)
+├── v2/                     # Version 2 – Asynchronous Queue
 │   ├── app.js
 │   ├── server.js
+│   ├── middlewares/
+│   ├── models/
 │   ├── controllers/
 │   ├── routes/
 │   ├── queues/
 │   ├── workers/
+│   ├── views/
 │   ├── utils/
 │   │   ├── db.js
 │   │   ├── redis.js
@@ -68,9 +71,10 @@ flashfast-backend/
 │   └── README.md
 │
 ├── docker-compose.yml
+├── nginx.conf
 ├── ARCHITECTURE.md         # System architecture diagrams and design decisions
 ├── ANALYSIS_REPORT.pdf     # Quantitative + qualitative performance comparison
-├── README.md               # This file (root-level)
+├── README.md               # Root-level overview and instructions
 └── .gitignore
 ```
 
@@ -92,12 +96,15 @@ npm run start
 API base URL: `http://localhost:3001`
 
 ### ⚙️ 3. Run Version 2 (Asynchronous Queue)
-(After implementation)
 ```bash
 cd v2
 npm install
-npm run start
+npm run start:v2
 ```
+Notes:
+- Run **two instances** of v2 on different ports (e.g., 3000 & 3001) to test Load Balancer.
+- Ensure both instances **use the same MongoDB database** for consistent flash sale state.
+- Open `testStock.html` to simulate multiple clients and real-time stock updates.
 
 ---
 
@@ -109,8 +116,30 @@ npm run start
 - 📦 Order Creation and Listing
 - 🧾 Role-based Access Control
 - 🧠 MongoDB Transactions for consistency
-- 💾 Redis ready for caching & queues
+- 💾 Redis for caching & queues (v2)
 - 🧰 Dockerized Environment for easy deployment
+- 🌐 Real-time stock updates via Socket.io (v2)
+
+---
+
+## ⚙️ Nginx Load Balancer (v2)
+- `nginx.conf` configured to distribute requests between multiple v2 instances.
+- Supports **Round-robin** load balancing (default) and can be switched to **Least Connections**.
+- Proper headers set for **WebSocket upgrade** to support Socket.io.
+- Ensures horizontal scalability and fault tolerance during high concurrency.
+
+---
+
+## 🔧 Environment Variables
+- Each version has its own `.env` file (`.env.v1` / `.env.v2`).
+- Example variables:
+```
+PORT=3000
+MONGO_URL=mongodb+srv://<username>:<password>@cluster0.mongodb.net/flashfast
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=your_jwt_secret
+```
+- Make sure to **use the same MongoDB instance for all v2 instances**.
 
 ---
 
@@ -118,28 +147,29 @@ npm run start
 | Deliverable | Description |
 |--------------|-------------|
 | **v1 Implementation** | Complete synchronous HTTP backend |
-| **v2 Implementation** | Async queue-based system with Redis |
+| **v2 Implementation** | Async queue-based system with Redis and Socket.io |
 | **ARCHITECTURE.md** | Diagrams and design decisions |
 | **ANALYSIS_REPORT.pdf** | Performance comparison between v1 and v2 |
-| **README.md (root)** | Overview and navigation |
+| **README.md (root)** | Overview and instructions |
 | **Video Demo** | 5-minute walkthrough and live performance test |
 
 ---
 
 ## 🧠 Performance Goals
 - Handle 10,000+ concurrent requests with no overselling.
-- Maintain low latency (p95 < 200ms for queue version).
+- Maintain low latency (p95 < 200ms for v2 Queue version).
 - Demonstrate horizontal scalability with Nginx load balancing.
-- Collect metrics (latency, throughput, CPU/memory) for both versions.
+- Collect metrics: latency, throughput, CPU/memory for both versions.
 
 ---
 
 ## 🏁 Final Notes
 This project demonstrates:
-- Deep understanding of **backend communication patterns**.  
-- Mastery of **synchronous vs asynchronous** execution models.  
-- Practical application of **Redis, MongoDB transactions, and load balancing**.  
+- Deep understanding of **backend communication patterns**.
+- Mastery of **synchronous vs asynchronous** execution models.
+- Practical application of **Redis, MongoDB transactions, and load balancing**.
 - Real-world engineering thinking in **performance analysis and scalability**.
+- Ready-to-run **Dockerized environment** with multi-instance testing.
 
 ---
 
@@ -147,3 +177,4 @@ This project demonstrates:
 **Basil Abu Saleem && Mohammed Salim**  
 Backend Engineer | Node.js | MongoDB | Redis  
 Built as part of the *Mastering Backend Engineering & Performance Optimization* program (Gaza Sky Geeks, 2025).
+
