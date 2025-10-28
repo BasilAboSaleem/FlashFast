@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlashFast v2 - Real-Time Stock Updates</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      color: #38bdf8;
+    }
+    .stock {
+      background: #1e293b;
+      margin: 10px auto;
+      padding: 15px;
+      border-radius: 8px;
+      width: 400px;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+    .stock strong {
+      color: #a5b4fc;
+    }
+  </style>
+</head>
+<body>
+  <h1>📡 FlashFast v2 - Live Stock Updates</h1>
+  <p>Keep this page open to see real-time inventory updates</p>
+
+  <div id="updates"></div>
+
+  <script>
+    const socket = io("http://localhost:3002");
+
+    const updatesDiv = document.getElementById("updates");
+
+    socket.on("connect", () => {
+      console.log("✅ Connected to WebSocket server");
+    });
+
+    socket.on("stockUpdate", (data) => {
+      console.log("📦 Stock Update:", data);
+      const div = document.createElement("div");
+      div.className = "stock";
+      div.innerHTML = `
+        <strong>Product ID:</strong> ${data.productId} <br>
+        <strong>New Stock:</strong> ${data.newStock} <br>
+        <em>${data.message}</em>
+      `;
+      updatesDiv.prepend(div);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("❌ Disconnected from server");
+    });
+  </script>
+</body>
+</html>
