@@ -11,7 +11,7 @@ Goal: Compare performance between
 
 **First round of tests**
 
-- The first test give us very bad result
+- The first round tests give us very bad result
 
 ```
    http_req_duration
@@ -20,7 +20,7 @@ Goal: Compare performance between
 
 ```
 
-- so we do more tests and find that endpoint that doesn't rely on Database is doing great like "/"endpoint
+- we do more tests and find that endpoint that doesn't rely on Database is doing great like "/"endpoint
 
 ```
   ✗ 'p(95)<500' p(95)=1.97s
@@ -28,7 +28,7 @@ Goal: Compare performance between
 
 ```
 
-- After that we serve the DB from local docker file instead of using free online databse provider and the tests was rapidly improved
+- After that we serve the DB from local docker file instead of using free online DB provider and the tests was rapidly improved
 
 ```
  ✗ 'p(95)<500' p(95)=1.97s
@@ -48,8 +48,6 @@ Approach 2: Two Node.js servers behind Nginx (load balanced)
 **Tools Used**
 
 Load testing: k6
-
-Visualization & analysis: Python + Matplotlib
 
 Containerization: Docker & docker-compose
 
@@ -90,8 +88,8 @@ Metric Approach 1 (Single Node.js) Approach 2 (Nginx + 2 Nodes) Winner
 | P90 Latency (ms) | 3633.42 | 75.57 | Approach 2 |
 | P95 Latency (ms) | 3816.65 | 132.10 | Approach 2 |
 | Throughput (req/s) | 749.67 | 4961.27 | Approach 2 |
-| Error Rate (%) | 23.9% | 98.7% | Approach 2 |
-| CPU After (%) | 23% | 88% | Approach 2 |
+| Error Rate (%) | 23.9% | 98.7% | Approach 1 |
+| CPU After (%) | 23% | 88% | Approach 1 |
 | RAM After (%) | 78% | 74% | Slightly Approach 2 |
 
 🧩 Note: The second system reported far higher throughput, but the majority of those requests failed, indicating misconfiguration or saturation rather than true scalability.

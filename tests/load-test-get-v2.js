@@ -16,11 +16,11 @@ export let options = {
   },
 };
 
-const BASE = __ENV.BASE_URL || "http://localhost:80";
+const BASE = __ENV.BASE_URL || "http://localhost:3001";
 
 export default function () {
   const res = http.get(
-    "http://localhost/api/flashsale-events",
+    BASE + "/api/flashsale-events",
     // '${BASE}/api/flashsale-events`,
     // `${BASE}/flashsale-events`,
     // `${BASE}`,
