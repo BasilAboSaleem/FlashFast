@@ -172,3 +172,48 @@ Memory utilization comparable on both setups.
 
 The single Node.js server delivered more stable results under high concurrency, while the Nginx + 2-node setup demonstrated potential scalability but failed due to configuration or saturation issues.
 For production readiness, focus next on tuning the load balancer and ensuring backend health monitoring before scaling horizontally.
+
+---
+
+### 🧩 Final Round — 12-Core & 2-Core Cluster Results (November 2025)
+
+After applying Node.js clustering on a 12-core server, the system **crashed and stopped accepting requests** due to event-loop saturation and improper worker communication between cluster processes.
+
+Reverting to **2-core mode** stabilized the system but resulted in **84.89% failure rate** under ~1 million requests (881 925 failed out of 1 038 842).  
+This is still an improvement compared to the **98% failure** seen in the Nginx load-balanced scenario.
+
+**Key Insight:**  
+Both configurations failed primarily because of **connection saturation**, **OS-level limits (ulimit, worker_connections)**, and **load-balancer misconfiguration**, not because of faulty application logic.
+
+---
+
+### 🧭 Updated Conclusion — Educational Outcomes
+
+Despite high failure rates, this phase successfully demonstrated:
+
+- The practical difference between **single-threaded** and **clustered** Node.js execution.  
+- The impact of **horizontal scaling misconfiguration** under extreme concurrency.  
+- The importance of **proper tuning** (OS, Nginx, and Node parameters) before scaling.  
+
+The system behaved exactly as expected for an unoptimized backend under flash-sale traffic: it exposed real performance bottlenecks clearly.
+
+---
+
+### 🏁 Final Submission Summary
+
+| Category | Winner | Reason |
+|-----------|---------|--------|
+| Reliability | Single Node.js | Fewer failures, stable response pattern |
+| Raw Throughput | Nginx + 2 Nodes | Higher RPS (but unstable) |
+| Cluster Performance | 2-Core Cluster | Partial improvement before saturation |
+| Resource Efficiency | Node.js | Lower CPU and memory usage |
+| Scalability Potential | Nginx / Cluster | With correct tuning |
+| Educational Value | All Approaches | Each revealed real-world constraints |
+
+**Final Verdict (Updated):**  
+The project fulfills its goal by reaching realistic flash-sale stress limits and analyzing why failure occurs.  
+Next steps:  
+1. Tune `ulimit`, `worker_connections`, and Nginx proxy settings.  
+2. Add **Redis caching** for hot data.  
+3. Move **writes** to an **async queue (Bull/Kafka)**.  
+4. Introduce **metrics & auto-scaling** for future iterations.
