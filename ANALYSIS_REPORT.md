@@ -90,7 +90,7 @@ Metric Approach 1 (Single Node.js) Approach 2 (Nginx + 2 Nodes) Winner
 | Throughput (req/s) | 749.67 | 4961.27 | Approach 2 |
 | Error Rate (%) | 23.9% | 98.7% | Approach 1 |
 | CPU After (%) | +18% | +77% | Approach 1 |
-| RAM After (%) | +4% | +7% | Slightly Approach 2 |
+| RAM After (%) | +4% | +7% | Slightly Approach 1 |
 
 🧩 Note: The second system reported far higher throughput, but the majority of those requests failed, indicating misconfiguration or saturation rather than true scalability.
 
