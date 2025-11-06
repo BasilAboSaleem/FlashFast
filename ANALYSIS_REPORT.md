@@ -89,8 +89,8 @@ Metric Approach 1 (Single Node.js) Approach 2 (Nginx + 2 Nodes) Winner
 | P95 Latency (ms) | 3816.65 | 132.10 | Approach 2 |
 | Throughput (req/s) | 749.67 | 4961.27 | Approach 2 |
 | Error Rate (%) | 23.9% | 98.7% | Approach 1 |
-| CPU After (%) | 23% | 88% | Approach 1 |
-| RAM After (%) | 78% | 74% | Slightly Approach 2 |
+| CPU After (%) | +18% | +77% | Approach 1 |
+| RAM After (%) | +4% | +7% | Slightly Approach 2 |
 
 🧩 Note: The second system reported far higher throughput, but the majority of those requests failed, indicating misconfiguration or saturation rather than true scalability.
 
